@@ -2,7 +2,7 @@ class vector {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.magnitude = sqrt(x*x + y*y);
+    this.magnitude = Math.sqrt(x*x + y*y);
   }
   
   add(v1) {
@@ -18,17 +18,16 @@ class vector {
   }
   
   direction() {
-    let theta = atan(this.y / this.x);
-    if (this.x < 0) theta += 180;
+    let theta = Math.atan(this.y / this.x);
+    if (this.x < 0) theta += Math.PI;
     return theta;
   }
   
   scaleToMagnitude(m) {
     let dir = this.direction();
-    this.x = cos(dir) * m;
-    this.y = sin(dir) * m;
+    this.x = Math.cos(dir) * m;
+    this.y = Math.sin(dir) * m;
     this.magnitude = m;
-    return;
   }
   
   print() {

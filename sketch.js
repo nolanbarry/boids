@@ -7,7 +7,7 @@ function setup() {
   for (let i = 0; i < BOID_COUNT; i++) {
     boids[i] = new boid();
   }
-  angleMode(DEGREES);
+
   frameRate(60);
 }
 
@@ -20,10 +20,14 @@ function draw() {
 
 }
 
+const DRAW_SIZE = 10;
 const I_VELOCITY = 3;
-const VIEW_DIST = 100;
-const MIN_PROXIMITY = 25;
-const DRAW_SIZE = 20;
+const VIEW_DIST = DRAW_SIZE * 4;
+const MIN_PROXIMITY = DRAW_SIZE * 3 / 2;
+const SEPARATION_MULTIPLIER_STRENGTH = 2;
+const STUBBORNNESS = 25;
+const ALIGNMENT_STRENGTH = 2;
+const COHESION_STRENGTH = 1;
 const ALIGNMENT_ENABLED = true;
 const COHESION_ENABLED = true;
 const SEPARATION_ENABLED = true;
@@ -39,10 +43,10 @@ class boid {
 
   update() {
     let neighbors = this.getNeighbors();
-    let v1 = this.cohesionRule(neighbors);
-    let v2 = this.separationRule(neighbors);
-    let v3 = this.alignmentRule(neighbors);
-    this.velocity = this.velocity.scale(25).add(v1.add(v2.add(v3)));
+    let v1 = this.cohesionRule(neighbors).scale(COHESION_STRENGTH);
+    let v2 = this.separationRule(neighbors).scale(SEPARATION_MULTIPLIER_STRENGTH);
+    let v3 = this.alignmentRule(neighbors).scale(ALIGNMENT_STRENGTH);
+    this.velocity = this.velocity.scale(STUBBORNNESS).add(v1.add(v2.add(v3)));
     this.velocity.scaleToMagnitude(0.5);
     this.position = this.position.add(this.velocity.scale(this.speed));
     this.position = new vector((this.position.x + width) % width, (this.position.y + height) % height);
@@ -50,7 +54,7 @@ class boid {
   }
 
   cohesionRule(fm) {
-    if (fm.length == 0 || !COHESION_ENABLED) return new vector(0, 0);
+    if (fm.length === 0 || !COHESION_ENABLED) return new vector(0, 0);
     let x = 0;
     let y = 0;
     for (let i = 0; i < fm.length; i++) {
@@ -65,7 +69,7 @@ class boid {
   }
 
   separationRule(fm) {
-    if (fm.length == 0 || !SEPARATION_ENABLED) return new vector(0, 0);
+    if (fm.length === 0 || !SEPARATION_ENABLED) return new vector(0, 0);
     let x = 0;
     let y = 0;
     let farCounter = 0;
@@ -78,17 +82,17 @@ class boid {
       x += fm[i].position.x;
       y += fm[i].position.y;
     }
-    if (farCounter == fm.length) return new vector(0, 0);
+    if (farCounter === fm.length) return new vector(0, 0);
     x /= (fm.length - farCounter);
     y /= (fm.length - farCounter);
-    let v = new vector(x - this.position.x, y - this.position.y)
-    v.scaleToMagnitude(1);
-    v = v.scale(-5)
+    let v = new vector(x - this.position.x, y - this.position.y);
+    let distance = v.magnitude;
+    v.scaleToMagnitude(MIN_PROXIMITY / distance * -1);
     return v;
   }
 
   alignmentRule(fm) {
-    if (fm.length == 0 || !ALIGNMENT_ENABLED) return new vector(0, 0);
+    if (fm.length === 0 || !ALIGNMENT_ENABLED) return new vector(0, 0);
     let x = 0;
     let y = 0;
     for (let i = 0; i < fm.length; i++) {
@@ -108,7 +112,14 @@ class boid {
     fill(240);
     let direction = this.velocity.direction();
     let p = this.position;
-    triangle(p.x + cos(direction) * DRAW_SIZE, p.y + sin(direction) * DRAW_SIZE, p.x + cos(direction + 90) * DRAW_SIZE / 4, p.y + sin(direction + 90) * DRAW_SIZE / 4, p.x + cos(direction - 90) * DRAW_SIZE / 4, p.y + sin(direction - 90) * DRAW_SIZE / 4);
+    triangle(
+        p.x + Math.cos(direction) * DRAW_SIZE,
+        p.y + Math.sin(direction) * DRAW_SIZE,
+        p.x + Math.cos(direction + 2 * Math.PI / 3) * DRAW_SIZE / 2,
+        p.y + Math.sin(direction + 2 * Math.PI / 3) * DRAW_SIZE / 2,
+        p.x + cos(direction - 2 * Math.PI / 3) * DRAW_SIZE / 2,
+        p.y + sin(direction - 2 * Math.PI / 3) * DRAW_SIZE / 2
+    );
     stroke(240);
     strokeWeight(1);
   }
@@ -116,7 +127,7 @@ class boid {
   getNeighbors() {
     let neighbors = [];
     for (let i = 0; i < boids.length; i++) {
-      if (boids[i].identifier == this.identifier) {
+      if (boids[i].identifier === this.identifier) {
         continue;
       }
       let toBoid = boids[i].position.subtract(this.position);
